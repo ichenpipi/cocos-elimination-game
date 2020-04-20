@@ -18,3 +18,13 @@ export enum TileEvent {
     TouchEnd = 'tile_touchend',
     TouchCancel = 'tile_touchcancel',
 }
+
+/**
+ * 滑动方向
+ */
+export enum SlidDirection {
+    Up = 1, // 上
+    Down, // 下
+    Left, // 左
+    Right, // 右
+}

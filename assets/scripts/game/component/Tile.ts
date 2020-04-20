@@ -92,7 +92,7 @@ export default class Tile extends cc.Component {
     public init() {
         this._type = null;
         this.sprite.spriteFrame = null;
-        this.setCoord(-1, -1);
+        if (!this._coord) this._coord = Coord();
         this.node.setScale(0);
     }
 
@@ -119,8 +119,7 @@ export default class Tile extends cc.Component {
      */
     public setCoord(x: number | Coordinate, y?: number) {
         if (!this._coord) this._coord = Coord();
-        if (typeof x === 'number') this._coord.set(x, y);
-        else this._coord.set(x);
+        this._coord.set(x, y);
     }
 
     /**
