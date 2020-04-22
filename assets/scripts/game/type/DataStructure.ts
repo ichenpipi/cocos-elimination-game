@@ -1,3 +1,6 @@
+import Tile from "../component/Tile";
+import { CombinationType } from "./Enum";
+
 /**
  * 坐标
  */
@@ -73,4 +76,86 @@ export class Coordinate {
  */
 export function Coord(x: number = 0, y: number = 0) {
     return new Coordinate(x, y);
+}
+
+/**
+ * 组合
+ */
+export class Combination {
+
+    public coords: Coordinate[]; // 坐标集
+
+    public commonCoord: Coordinate; // 共同坐标
+
+    public type: CombinationType; // 组合类型
+
+    constructor(coords: Coordinate[]) {
+        this.coords = coords;
+        this.updateType();
+    }
+
+    /**
+     * 更新类型
+     */
+    private updateType() {
+        let up = 0;
+        let down = 0;
+        let left = 0;
+        let right = 0;
+        let keyCoord = this.commonCoord ? this.commonCoord : this.coords[0]; // 关键坐标
+        // 收集数量
+        for (let i = 0; i < this.coords.length; i++) {
+            if (this.coords[i].compare(keyCoord)) continue; // 同一个坐标时跳过
+            // 判断位置
+            if (this.coords[i].x === keyCoord.x) {
+                if (this.coords[i].y > keyCoord.y) up++;
+                else down++;
+            } else {
+                if (this.coords[i].x < keyCoord.x) left++;
+                else right++;
+            }
+        }
+        // 判断类型
+        if (up === 0 && down === 0) this.type = CombinationType.Horizontal;
+        else if (left === 0 && right === 0) this.type = CombinationType.Vertical;
+        else if (up > 0 && down > 0 && left > 0 && right > 0) this.type = CombinationType.Cross;
+        else if ((up > 0 && down === 0 && left === 0 && right > 0) ||
+            (up > 0 && down === 0 && left > 0 && right === 0) ||
+            (up === 0 && down > 0 && left === 0 && right > 0) ||
+            (up === 0 && down > 0 && left > 0 && right === 0)) {
+            this.type = CombinationType.LShape;
+        } else if ((up === 0 && down > 0 && left > 0 && right > 0) ||
+            (up > 0 && down === 0 && left > 0 && right > 0) ||
+            (up > 0 && down > 0 && left === 0 && right > 0) ||
+            (up > 0 && down > 0 && left > 0 && right === 0)) {
+            this.type = CombinationType.TShape;
+        }
+    }
+
+    /**
+     * 组合是否包含坐标集中的任意一个，有得返回对应坐标
+     * @param coords 查询坐标集
+     */
+    public include(coords: Coordinate[]): Coordinate {
+        for (let i = 0; i < this.coords.length; i++) {
+            for (let j = 0; j < coords.length; j++) {
+                if (this.coords[i].compare(coords[j])) return coords[j];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 合并组合
+     * @param coords 坐标集
+     * @param commonCoord 共同坐标
+     */
+    public merge(coords: Coordinate[], commonCoord: Coordinate) {
+        for (let i = 0; i < coords.length; i++) {
+            if (!coords[i].compare(commonCoord))
+                this.coords.push(coords[i]);
+        }
+        this.commonCoord = commonCoord;
+        this.updateType();
+    }
 }

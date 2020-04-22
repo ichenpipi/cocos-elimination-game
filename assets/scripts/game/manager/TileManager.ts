@@ -1,11 +1,12 @@
 import Tile from "../component/Tile";
-import { TileType, TileEvent, SlidDirection } from "../type/Enum";
+import { TileType, TileEvent, SlideDirection } from "../type/Enum";
 import GameConfig from "../../data/GameConfig";
 import GameUtil from "../util/GameUtil";
 import PoolManager from "./PoolManager";
 import MapManager from "./MapManager";
-import { Coordinate } from "../type/DataStructure";
+import { Coordinate, Combination } from "../type/DataStructure";
 import { GameEvent } from "../../common/GameEvent";
+import TestTypeMap from "../util/TestTypeMap";
 
 const { ccclass, property } = cc._decorator;
 
@@ -26,6 +27,8 @@ export default class TileManager extends cc.Component {
 
     private tileTouchStartPos: cc.Vec2 = null; // 滑动开始位置
 
+    private combinations: Combination[] = null;
+
     private static instance: TileManager = null
 
     protected onLoad() {
@@ -41,6 +44,12 @@ export default class TileManager extends cc.Component {
         GameEvent.off(TileEvent.TouchEnd, this.onTileTouchEnd, this);
         GameEvent.off(TileEvent.TouchCancel, this.onTileTouchCancel, this);
     }
+
+    // ----------------------------------------------------------------------------------------------------
+
+
+
+    // ----------------------------------------------------------------------------------------------------
 
     /**
      * 方块的 touchstart 回调
@@ -117,7 +126,7 @@ export default class TileManager extends cc.Component {
      * @param coord 坐标
      * @param direction 方向
      */
-    private tryExchangeBySlid(coord: Coordinate, direction: SlidDirection) {
+    private tryExchangeBySlid(coord: Coordinate, direction: SlideDirection) {
         cc.log('点击交换方块 | coord1: ' + coord.toString() + ' | direction: ' + direction);
         let targetCoord = GameUtil.getCoordByDirection(coord, direction);
         if (targetCoord) {
@@ -132,7 +141,17 @@ export default class TileManager extends cc.Component {
      * @param coord2 2
      */
     private async tryExchange(coord1: Coordinate, coord2: Coordinate) {
+        // 交换方块
         await this.exchangeTiles(coord1, coord2);
+        // 获取可消除组合
+        this.combinations = GameUtil.getCombinations(this.typeMap);
+        if (this.combinations.length > 0) {
+            // 消除！！！
+            this.eliminateCombinations();
+        } else {
+            // 不能消除，换回来吧
+            await this.exchangeTiles(coord1, coord2);
+        }
     }
 
     /**
@@ -153,11 +172,38 @@ export default class TileManager extends cc.Component {
         this.setTypeMap(coord2, tile1Type);
         this.setTileMap(coord1, tile2);
         this.setTileMap(coord2, tile1);
-        // 交换方块
+        // 交换方块动画
         cc.tween(tile1.node).to(0.1, { position: MapManager.getPos(coord2) }).start();
         cc.tween(tile2.node).to(0.1, { position: MapManager.getPos(coord1) }).start();
         await new Promise(res => setTimeout(res, 100));
     }
+
+    // ----------------------------------------------------------------------------------------------------
+
+    /**
+     * 消除组合
+     */
+    private eliminateCombinations() {
+        for (let i = 0; i < this.combinations.length; i++) {
+            for (let j = 0; j < this.combinations[i].coords.length; j++) {
+                this.eliminateTile(this.combinations[i].coords[j]);
+            }
+        }
+        this.combinations = [];
+    }
+
+    /**
+     * 消除方块
+     * @param coord 坐标
+     */
+    private eliminateTile(coord: Coordinate) {
+        this.getTileMap(coord).disappear(); // 方块消失
+        // 数据置空
+        this.setTileMap(coord, null);
+        this.setTypeMap(coord, null);
+    }
+
+    // ----------------------------------------------------------------------------------------------------
 
     /**
      * 设置类型表
@@ -198,6 +244,8 @@ export default class TileManager extends cc.Component {
         if (typeof x === 'number') this.tileMap[x][<number>y] = tile;
         else this.tileMap[x.x][x.y] = <Tile>y;
     }
+
+    // ----------------------------------------------------------------------------------------------------
 
     /**
      * 初始化
@@ -252,4 +300,7 @@ export default class TileManager extends cc.Component {
         tile.appear();
         return tile;
     }
+
+    // ----------------------------------------------------------------------------------------------------
+
 }
