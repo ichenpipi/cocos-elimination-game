@@ -47,10 +47,6 @@ export default class TileManager extends cc.Component {
 
     // ----------------------------------------------------------------------------------------------------
 
-
-
-    // ----------------------------------------------------------------------------------------------------
-
     /**
      * 方块的 touchstart 回调
      * @param coord 坐标
@@ -259,13 +255,9 @@ export default class TileManager extends cc.Component {
      * 生成初始的类型表
      */
     private generateInitTypeMap() {
-        this.typeMap = [];
-        for (let c = 0; c < GameConfig.col; c++) {
-            let colSet: TileType[] = [];
-            for (let r = 0; r < GameConfig.row; r++) {
-                colSet.push(GameUtil.getRandomType());
-            }
-            this.typeMap.push(colSet);
+        this.typeMap = GameUtil.getInitTypeMap();
+        if (!GameUtil.hasValidCombo(this.typeMap)) {
+            this.typeMap = GameUtil.getInitTypeMap();
         }
     }
 

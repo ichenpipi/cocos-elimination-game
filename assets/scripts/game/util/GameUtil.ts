@@ -147,5 +147,105 @@ export default class GameUtil {
         return combinations;
     }
 
+    /**
+     * 获取初始类型表
+     */
+    public static getInitTypeMap(): TileType[][] {
+        let typeMap: TileType[][] = [];
+        for (let c = 0; c < GameConfig.col; c++) {
+            let colSet: TileType[] = [];
+            for (let r = 0; r < GameConfig.row; r++) {
+                let excludeTypes = [];
+                // 水平检测前面 2 个相同类型
+                let rowType: TileType = null;
+                if (c > 1 && typeMap[c - 1][r] === typeMap[c - 2][r]) rowType = typeMap[c - 1][r];
+                if (rowType) excludeTypes.push(rowType);
+                // 垂直检测下面 2 个相同类型
+                let colType: TileType = null;
+                if (r > 1 && colSet[r - 1] === colSet[r - 2]) colType = colSet[r - 1];
+                if (colType) excludeTypes.push(colType);
+                // 添加可用的随机类型
+                colSet.push(GameUtil.getRandomType(excludeTypes));
+            }
+            typeMap.push(colSet);
+        }
+        return typeMap;
+    }
+
+    /**
+     * 是否有可一步消除的组合
+     */
+    public static hasValidCombo(map: TileType[][]) {
+        for (let r = 0; r < GameConfig.row; r++) {
+            for (let c = 0; c < GameConfig.col; c++) {
+                if (c + 3 <= GameConfig.col - 1) {
+                    if (map[c][r] === map[c + 1][r] && map[c][r] === map[c + 3][r]) { // 1 1 X 1
+                        return true;
+                    }
+                    if (map[c][r] === map[c + 2][r] && map[c][r] === map[c + 3][r]) { // 1 X 1 1
+                        return true;
+                    }
+                }
+                if (map[c][r] === map[c + 1][r]) {
+                    if (r - 1 >= 0 && map[c][r] === map[c + 2][r - 1]) {     // 1 1 X
+                        return true;                                         // X X 1
+                    }
+                    if (r + 1 <= GameConfig.row - 1 && map[c][r] === map[c + 2][r + 1]) {   // X X 1
+                        return true;                                                        // 1 1 X
+                    }
+                }
+                if (map[c][r] === map[c + 2][r]) {
+                    if (r - 1 >= 0 && map[c][r] === map[c + 1][r - 1]) {       // 1 X 1
+                        return true;                                           // X 1 X
+                    }
+                    if (r + 1 <= GameConfig.row - 1 && map[c][r] === map[c + 1][r + 1]) {   // X 1 X
+                        return true;                                                        // 1 X 1
+                    }
+                }
+                if (r - 1 >= 0 &&
+                    map[c][r] === map[c + 1][r - 1] && map[c + 1][r - 1] === map[c + 2][r - 1]) {   // 1 X X
+                    return true;                                                                    // X 1 1
+                }
+                if (r + 1 <= GameConfig.row - 1 &&
+                    map[c][r] === map[c + 1][r + 1] && map[c + 1][r + 1] === map[c + 2][r + 1]) {   // X 1 1
+                    return true;                                                                    // 1 X X
+                }
+
+                if (r + 3 <= GameConfig.row - 1) {
+                    if (map[c][r] === map[c][r + 1] && map[c][r] === map[c][r + 3]) {
+                        return true;
+                    }
+                    if (map[c][r] === map[c][r + 2] && map[c][r] === map[c][r + 3]) {
+                        return true;
+                    }
+                }
+                if (map[c][r] === map[c][r + 1]) {
+                    if (c - 1 >= 0 && map[c][r] === map[c - 1][r + 2]) {
+                        return true;
+                    }
+                    if (c + 1 <= GameConfig.col - 1 && map[c][r] === map[c + 1][r + 2]) {
+                        return true;
+                    }
+                }
+                if (map[c][r] === map[c][r + 2]) {
+                    if (c - 1 >= 0 && map[c][r] === map[c - 1][r + 1]) {
+                        return true;
+                    }
+                    if (c + 1 <= GameConfig.col - 1 && map[c][r] === map[c + 1][r + 1]) {
+                        return true;
+                    }
+                }
+                if (c - 1 >= 0 &&
+                    map[c][r] === map[c - 1][r + 1] && map[c - 1][r + 1] === map[c - 1][r + 2]) {
+                    return true;
+                }
+                if (c + 1 <= GameConfig.col - 1 &&
+                    map[c][r] === map[c + 1][r + 1] && map[c + 1][r + 1] === map[c + 1][r + 2]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 }
