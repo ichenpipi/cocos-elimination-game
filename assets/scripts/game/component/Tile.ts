@@ -2,7 +2,7 @@ import { TileType, TileEvent } from "../type/Enum";
 import { Coordinate, Coord } from "../type/DataStructure";
 import ResManager from "../manager/ResManager";
 import PoolManager from "../manager/PoolManager";
-import { GameEvent } from "../../common/GameEvent";
+import { GameEvent } from "../../../eazax-ccc/core/GameEvent";
 
 const { ccclass, property } = cc._decorator;
 

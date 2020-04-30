@@ -5,8 +5,7 @@ import GameUtil from "../util/GameUtil";
 import PoolManager from "./PoolManager";
 import MapManager from "./MapManager";
 import { Coordinate, Combination } from "../type/DataStructure";
-import { GameEvent } from "../../common/GameEvent";
-import TestTypeMap from "../util/TestTypeMap";
+import { GameEvent } from "../../../eazax-ccc/core/GameEvent";
 
 const { ccclass, property } = cc._decorator;
 
@@ -27,9 +26,9 @@ export default class TileManager extends cc.Component {
 
     private tileTouchStartPos: cc.Vec2 = null; // 滑动开始位置
 
-    private combinations: Combination[] = null;
+    private combinations: Combination[] = null; // 可消除组合
 
-    private static instance: TileManager = null
+    private static instance: TileManager = null; // 实例
 
     protected onLoad() {
         TileManager.instance = this;
@@ -53,7 +52,7 @@ export default class TileManager extends cc.Component {
      * @param pos 点击位置
      */
     private onTileTouchStart(coord: Coordinate, pos: cc.Vec2) {
-        cc.log('点击 | coord: ' + coord.toString() + ' | type: ' + this.getTypeMap(coord));
+        cc.log('点击 | coord: ' + coord.toString() + ' | type: ' + this.getType(coord));
         // 是否已经选中了方块
         if (this.selectedCoord) {
             // 是否同一个方块
@@ -142,8 +141,14 @@ export default class TileManager extends cc.Component {
         // 获取可消除组合
         this.combinations = GameUtil.getCombinations(this.typeMap);
         if (this.combinations.length > 0) {
-            // 消除！！！
-            this.eliminateCombinations();
+            await new Promise(res => setTimeout(res, 250));
+            this.eliminateCombinations(); // 消除
+            await new Promise(res => setTimeout(res, 250));
+            await this.falldown(); // 下落
+            await new Promise(res => setTimeout(res, 250));
+            await this.fillEmpty(); // 填充
+            await new Promise(res => setTimeout(res, 250));
+            this.keepCheckingUntilNoMoreCombiantion(); // 持续检测
         } else {
             // 不能消除，换回来吧
             await this.exchangeTiles(coord1, coord2);
@@ -157,17 +162,17 @@ export default class TileManager extends cc.Component {
      */
     private async exchangeTiles(coord1: Coordinate, coord2: Coordinate) {
         // 保存变量
-        let tile1 = this.getTileMap(coord1);
-        let tile2 = this.getTileMap(coord2);
-        let tile1Type = this.getTypeMap(coord1);
-        let tile2Type = this.getTypeMap(coord2);
+        let tile1 = this.getTile(coord1);
+        let tile2 = this.getTile(coord2);
+        let tile1Type = this.getType(coord1);
+        let tile2Type = this.getType(coord2);
         // 交换数据
         tile1.setCoord(coord2);
         tile2.setCoord(coord1);
-        this.setTypeMap(coord1, tile2Type);
-        this.setTypeMap(coord2, tile1Type);
-        this.setTileMap(coord1, tile2);
-        this.setTileMap(coord2, tile1);
+        this.setType(coord1, tile2Type);
+        this.setType(coord2, tile1Type);
+        this.setTile(coord1, tile2);
+        this.setTile(coord2, tile1);
         // 交换方块动画
         cc.tween(tile1.node).to(0.1, { position: MapManager.getPos(coord2) }).start();
         cc.tween(tile2.node).to(0.1, { position: MapManager.getPos(coord1) }).start();
@@ -189,14 +194,110 @@ export default class TileManager extends cc.Component {
     }
 
     /**
+     * 检查可消除组合直到没有可以消除的组合
+     */
+    private async keepCheckingUntilNoMoreCombiantion() {
+        this.combinations = GameUtil.getCombinations(this.typeMap); // 获取可消除的组合
+        // 有可消除的组合吗
+        while (this.combinations.length > 0) {
+            this.eliminateCombinations(); // 消除
+            await new Promise(res => setTimeout(res, 250));
+            await this.falldown(); // 下落
+            await new Promise(res => setTimeout(res, 250));
+            await this.fillEmpty(); // 填充
+            await new Promise(res => setTimeout(res, 250));
+            this.combinations = GameUtil.getCombinations(this.typeMap); // 获取可消除的组合
+            await new Promise(res => setTimeout(res, 250));
+        }
+        // 存在一步可消除情况吗
+        if (!GameUtil.hasValidCombo(this.typeMap)) {
+            this.removeAllTiles(); // 移除所有方块
+            this.generateInitTypeMap(); // 生成可用 typeMap
+            this.generateTiles(); // 生成方块
+        }
+    }
+
+    /**
+     * 移除所有方块
+     */
+    private removeAllTiles() {
+        for (let i = 0; i < this.tileMap.length; i++) {
+            for (let j = 0; j < this.tileMap[i].length; j++) {
+                this.getTile(i, j).disappear();
+                this.setType(i, j, null);
+            }
+        }
+    }
+
+    /**
      * 消除方块
      * @param coord 坐标
      */
     private eliminateTile(coord: Coordinate) {
-        this.getTileMap(coord).disappear(); // 方块消失
+        this.getTile(coord).disappear(); // 方块消失
         // 数据置空
-        this.setTileMap(coord, null);
-        this.setTypeMap(coord, null);
+        this.setTile(coord, null);
+        this.setType(coord, null);
+    }
+
+    // ----------------------------------------------------------------------------------------------------
+
+    /**
+     * 方块下落
+     */
+    private async falldown() {
+        let promises: Promise<void>[] = [];
+        for (let c = 0; c < GameConfig.col; c++) {
+            for (let r = 0; r < GameConfig.row; r++) {
+                // 找到空位
+                if (!this.getType(c, r)) {
+                    // 往上找方块
+                    for (let nr = r + 1; nr < GameConfig.row; nr++) {
+                        // 找到可以用的方块
+                        if (this.getType(c, nr)) {
+                            // 转移数据
+                            this.setType(c, r, this.getType(c, nr));
+                            this.setTile(c, r, this.getTile(c, nr));
+                            this.getTile(c, r).setCoord(c, r);
+                            // 置空
+                            this.setTile(c, nr, null);
+                            this.setType(c, nr, null);
+                            // 下落
+                            let fallPos = MapManager.getPos(c, r);
+                            let fallTime = (nr - r) * 0.1;
+                            promises.push(new Promise(res => {
+                                cc.tween(this.getTile(c, r).node)
+                                    .to(fallTime, { position: cc.v2(fallPos.x, fallPos.y - 10) })
+                                    .to(0.05, { position: fallPos })
+                                    .call(() => res())
+                                    .start();
+                            }));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // 等待所有方块完成下落动画
+        await Promise.all(promises);
+    }
+
+    /**
+     * 填充空位
+     */
+    private async fillEmpty() {
+        for (let c = 0; c < GameConfig.col; c++) {
+            for (let r = 0; r < GameConfig.row; r++) {
+                // 找到空位
+                if (!this.getType(c, r)) {
+                    let type = GameUtil.getRandomType();
+                    let tile = this.getNewTile(c, r, type);
+                    this.setTile(c, r, tile)
+                    this.setType(c, r, type);
+                }
+            }
+        }
+        await new Promise(res => setTimeout(res, 100));
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -206,7 +307,7 @@ export default class TileManager extends cc.Component {
      * @param x 横坐标
      * @param y 纵坐标
      */
-    private getTypeMap(x: number | Coordinate, y?: number): TileType {
+    private getType(x: number | Coordinate, y?: number): TileType {
         return typeof x === 'number' ? this.typeMap[x][y] : this.typeMap[x.x][x.y];
     }
 
@@ -216,7 +317,7 @@ export default class TileManager extends cc.Component {
      * @param y 纵坐标
      * @param type 类型
      */
-    private setTypeMap(x: number | Coordinate, y: number | TileType, type?: TileType) {
+    private setType(x: number | Coordinate, y: number | TileType, type?: TileType) {
         if (typeof x === 'number') this.typeMap[x][y] = type;
         else this.typeMap[x.x][x.y] = <TileType>y;
     }
@@ -226,7 +327,7 @@ export default class TileManager extends cc.Component {
      * @param x 横坐标
      * @param y 纵坐标
      */
-    private getTileMap(x: number | Coordinate, y?: number): Tile {
+    private getTile(x: number | Coordinate, y?: number): Tile {
         return typeof x === 'number' ? this.tileMap[x][y] : this.tileMap[x.x][x.y];
     }
 
@@ -236,7 +337,7 @@ export default class TileManager extends cc.Component {
      * @param y 纵坐标
      * @param type 组件
      */
-    private setTileMap(x: number | Coordinate, y: number | Tile, tile?: Tile) {
+    private setTile(x: number | Coordinate, y: number | Tile, tile?: Tile) {
         if (typeof x === 'number') this.tileMap[x][<number>y] = tile;
         else this.tileMap[x.x][x.y] = <Tile>y;
     }
@@ -269,7 +370,7 @@ export default class TileManager extends cc.Component {
         for (let c = 0; c < GameConfig.col; c++) {
             let colTileSet: Tile[] = [];
             for (let r = 0; r < GameConfig.row; r++) {
-                colTileSet.push(this.getTile(c, r, this.typeMap[c][r]));
+                colTileSet.push(this.getNewTile(c, r, this.typeMap[c][r]));
             }
             this.tileMap.push(colTileSet);
         }
@@ -281,7 +382,7 @@ export default class TileManager extends cc.Component {
      * @param y 纵坐标
      * @param type 类型
      */
-    private getTile(x: number, y: number, type: TileType): Tile {
+    private getNewTile(x: number, y: number, type: TileType): Tile {
         let node = PoolManager.get();
         node.setParent(this.container);
         node.setPosition(MapManager.getPos(x, y));

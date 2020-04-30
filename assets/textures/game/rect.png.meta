@@ -11,7 +11,7 @@
   "height": 178,
   "platformSettings": {},
   "subMetas": {
-    "FlatPanel": {
+    "rect": {
       "ver": "1.0.4",
       "uuid": "b9a33b02-82f2-4d02-ba45-f0bd7d07ea60",
       "rawTextureUuid": "d9923bb0-4081-456d-9a2a-c3593f25bf61",

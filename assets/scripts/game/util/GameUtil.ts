@@ -178,7 +178,7 @@ export default class GameUtil {
     public static hasValidCombo(map: TileType[][]) {
         for (let r = 0; r < GameConfig.row; r++) {
             for (let c = 0; c < GameConfig.col; c++) {
-                if (c + 3 <= GameConfig.col - 1) {
+                if (c + 3 < GameConfig.col) {
                     if (map[c][r] === map[c + 1][r] && map[c][r] === map[c + 3][r]) { // 1 1 X 1
                         return true;
                     }
@@ -186,32 +186,32 @@ export default class GameUtil {
                         return true;
                     }
                 }
-                if (map[c][r] === map[c + 1][r]) {
+                if (c + 1 < GameConfig.col && map[c][r] === map[c + 1][r]) {
                     if (r - 1 >= 0 && map[c][r] === map[c + 2][r - 1]) {     // 1 1 X
                         return true;                                         // X X 1
                     }
-                    if (r + 1 <= GameConfig.row - 1 && map[c][r] === map[c + 2][r + 1]) {   // X X 1
-                        return true;                                                        // 1 1 X
+                    if (r + 1 < GameConfig.row && map[c][r] === map[c + 2][r + 1]) {   // X X 1
+                        return true;                                                   // 1 1 X
                     }
                 }
-                if (map[c][r] === map[c + 2][r]) {
+                if (c + 2 < GameConfig.col && map[c][r] === map[c + 2][r]) {
                     if (r - 1 >= 0 && map[c][r] === map[c + 1][r - 1]) {       // 1 X 1
                         return true;                                           // X 1 X
                     }
-                    if (r + 1 <= GameConfig.row - 1 && map[c][r] === map[c + 1][r + 1]) {   // X 1 X
-                        return true;                                                        // 1 X 1
+                    if (r + 1 < GameConfig.row && map[c][r] === map[c + 1][r + 1]) {   // X 1 X
+                        return true;                                                   // 1 X 1
                     }
                 }
                 if (r - 1 >= 0 &&
                     map[c][r] === map[c + 1][r - 1] && map[c + 1][r - 1] === map[c + 2][r - 1]) {   // 1 X X
                     return true;                                                                    // X 1 1
                 }
-                if (r + 1 <= GameConfig.row - 1 &&
+                if (r + 1 < GameConfig.row &&
                     map[c][r] === map[c + 1][r + 1] && map[c + 1][r + 1] === map[c + 2][r + 1]) {   // X 1 1
                     return true;                                                                    // 1 X X
                 }
 
-                if (r + 3 <= GameConfig.row - 1) {
+                if (r + 3 < GameConfig.row) {
                     if (map[c][r] === map[c][r + 1] && map[c][r] === map[c][r + 3]) {
                         return true;
                     }
@@ -219,19 +219,19 @@ export default class GameUtil {
                         return true;
                     }
                 }
-                if (map[c][r] === map[c][r + 1]) {
+                if (r + 1 < GameConfig.row && map[c][r] === map[c][r + 1]) {
                     if (c - 1 >= 0 && map[c][r] === map[c - 1][r + 2]) {
                         return true;
                     }
-                    if (c + 1 <= GameConfig.col - 1 && map[c][r] === map[c + 1][r + 2]) {
+                    if (c + 1 < GameConfig.col && map[c][r] === map[c + 1][r + 2]) {
                         return true;
                     }
                 }
-                if (map[c][r] === map[c][r + 2]) {
+                if (r + 2 < GameConfig.row && map[c][r] === map[c][r + 2]) {
                     if (c - 1 >= 0 && map[c][r] === map[c - 1][r + 1]) {
                         return true;
                     }
-                    if (c + 1 <= GameConfig.col - 1 && map[c][r] === map[c + 1][r + 1]) {
+                    if (c + 1 < GameConfig.col && map[c][r] === map[c + 1][r + 1]) {
                         return true;
                     }
                 }
@@ -239,7 +239,7 @@ export default class GameUtil {
                     map[c][r] === map[c - 1][r + 1] && map[c - 1][r + 1] === map[c - 1][r + 2]) {
                     return true;
                 }
-                if (c + 1 <= GameConfig.col - 1 &&
+                if (c + 1 < GameConfig.col &&
                     map[c][r] === map[c + 1][r + 1] && map[c + 1][r + 1] === map[c + 1][r + 2]) {
                     return true;
                 }
